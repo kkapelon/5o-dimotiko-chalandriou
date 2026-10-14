@@ -38,7 +38,6 @@ jobs:
             --execute robots=off \
             --no-host-directories \
             --cut-dirs=2 \
-            --restrict-file-regex='index.php/nea-anakoinoseis' \
             --timeout=30 \
             --tries=3 \
             --wait=1 \
