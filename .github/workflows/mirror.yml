@@ -29,6 +29,11 @@ jobs:
           # (to-sxoleio-mas, drastiriotites, ...). --page-requisites still pulls
           # the CSS/JS/images that live outside that subtree.
           mkdir -p docs
+          # wget exits 8 when any request gets a server error response (e.g. a
+          # CSS-referenced image that 404s upstream). That is not fatal for a
+          # mirror, so tolerate 8 and fail on any other non-zero code. The
+          # sanity check below guards against a genuinely empty/failed mirror.
+          set +e
           wget \
             --recursive \
             --level=inf \
@@ -48,6 +53,12 @@ jobs:
             --user-agent="Mozilla/5.0 (github-mirror; every-3h; +https://github.com/kkapelon/5o-dimotiko-chalandriou)" \
             --directory-prefix=docs \
             http://5dim-chalandr.att.sch.gr/autosch/joomla15/index.php/nea-anakoinoseis/
+          wget_status=$?
+          set -e
+          if [ "$wget_status" -ne 0 ] && [ "$wget_status" -ne 8 ]; then
+            echo "wget failed with exit code $wget_status"
+            exit "$wget_status"
+          fi
           # Disable Jekyll processing so Joomla assets (e.g. _files) are served as-is
           touch docs/.nojekyll
           # Sanity check: the listing page must exist
