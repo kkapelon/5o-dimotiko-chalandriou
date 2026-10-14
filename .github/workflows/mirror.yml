@@ -69,4 +69,3 @@ jobs:
         with:
           commit_message: "mirror: automatic update from http://5dim-chalandr.att.sch.gr/autosch/joomla15/"
           file_pattern: docs
-          repository: ${{ github.repository }}
