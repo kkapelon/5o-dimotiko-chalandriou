@@ -23,17 +23,20 @@ jobs:
       - name: Mirror site with wget
         run: |
           set -euo pipefail
-          # Fetch ONLY the target page plus its assets (CSS/JS/images).
-          # No -r/--mirror: recursion would crawl the whole index.php/ tree
-          # because --no-parent only blocks links ABOVE the start URL, not siblings.
+          # Mirror ONLY the nea-anakoinoseis subtree (listing + sub-articles).
+          # The trailing slash makes wget's parent dir index.php/nea-anakoinoseis/,
+          # so --no-parent confines recursion to it and excludes sibling menus
+          # (to-sxoleio-mas, drastiriotites, ...). --page-requisites still pulls
+          # the CSS/JS/images that live outside that subtree.
           mkdir -p docs
           wget \
+            --recursive \
+            --level=inf \
+            --timestamping \
             --page-requisites \
             --adjust-extension \
             --convert-links \
-            --timestamping \
             --no-parent \
-            --exclude-directories=/autosch/joomla15/administrator \
             --reject-regex='[?]format=feed' \
             --execute robots=off \
             --no-host-directories \
@@ -44,11 +47,11 @@ jobs:
             --random-wait \
             --user-agent="Mozilla/5.0 (github-mirror; every-3h; +https://github.com/kkapelon/5o-dimotiko-chalandriou)" \
             --directory-prefix=docs \
-            http://5dim-chalandr.att.sch.gr/autosch/joomla15/index.php/nea-anakoinoseis
+            http://5dim-chalandr.att.sch.gr/autosch/joomla15/index.php/nea-anakoinoseis/
           # Disable Jekyll processing so Joomla assets (e.g. _files) are served as-is
           touch docs/.nojekyll
-          # Sanity check: need at least the nea-anakoinoseis page
-          test -f docs/index.php/nea-anakoinoseis.html || { echo "ERROR: docs/index.php/nea-anakoinoseis.html not found after mirror"; exit 1; }
+          # Sanity check: the listing page must exist
+          test -f docs/index.php/nea-anakoinoseis/index.html || { echo "ERROR: docs/index.php/nea-anakoinoseis/index.html not found after mirror"; exit 1; }
 
       - name: Auto-commit changes
         uses: stefanzweifel/git-auto-commit-action@v4
