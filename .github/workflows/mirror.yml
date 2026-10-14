@@ -23,18 +23,18 @@ jobs:
       - name: Mirror site with wget
         run: |
           set -euo pipefail
-          # Keep the previous mirror in docs/ so wget only re-downloads changed
-          # pages/assets (wget --mirror implies --timestamping). Do NOT wipe docs,
-          # otherwise every run is a full re-crawl.
+          # Fetch ONLY the target page plus its assets (CSS/JS/images).
+          # No -r/--mirror: recursion would crawl the whole index.php/ tree
+          # because --no-parent only blocks links ABOVE the start URL, not siblings.
           mkdir -p docs
           wget \
-            --mirror \
-            --timestamping \
             --page-requisites \
             --adjust-extension \
             --convert-links \
+            --timestamping \
             --no-parent \
             --exclude-directories=/autosch/joomla15/administrator \
+            --reject-regex='[?]format=feed' \
             --execute robots=off \
             --no-host-directories \
             --cut-dirs=2 \
