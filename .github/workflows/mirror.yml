@@ -38,18 +38,18 @@ jobs:
             --execute robots=off \
             --no-host-directories \
             --cut-dirs=2 \
+            --restrict-file-regex='index.php/nea-anakoinoseis' \
             --timeout=30 \
             --tries=3 \
             --wait=1 \
             --random-wait \
             --user-agent="Mozilla/5.0 (github-mirror; every-3h; +https://github.com/kkapelon/5o-dimotiko-chalandriou)" \
             --directory-prefix=docs \
-            http://5dim-chalandr.att.sch.gr/autosch/joomla15/
+            http://5dim-chalandr.att.sch.gr/autosch/joomla15/index.php/nea-anakoinoseis
           # Disable Jekyll processing so Joomla assets (e.g. _files) are served as-is
           touch docs/.nojekyll
-          # Sanity check: Pages needs docs/index.html
-          ls -la docs | head -n 30
-          test -f docs/index.html || { echo "ERROR: docs/index.html not found after mirror"; exit 1; }
+          # Sanity check: need at least the nea-anakoinoseis page
+          test -f docs/index.php/nea-anakoinoseis.html || { echo "ERROR: docs/index.php/nea-anakoinoseis.html not found after mirror"; exit 1; }
 
       - name: Auto-commit changes
         uses: stefanzweifel/git-auto-commit-action@v4
