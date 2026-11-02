@@ -20,26 +20,40 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Check website health
+      - name: Check website health (HTTP + title)
+        id: health
         run: |
           set -euo pipefail
-          # Only mirror if the site responds with HTTP 200, otherwise skip
-          # and wait for the next scheduled run.
-          status=$(curl -s -o /dev/null -w "%{http_code}" \
-            --max-time 30 \
-            --tries 3 \
-            --retry 3 \
-            --retry-delay 2 \
-            --user-agent="Mozilla/5.0 (github-mirror; every-3h; +https://github.com/kkapelon/5o-dimotiko-chalandriou)" \
-            http://5dim-chalandr.att.sch.gr/autosch/joomla15/index.php/nea-anakoinoseis/)
-          echo "Website HTTP status: $status"
-          if [ "$status" != "200" ]; then
-            echo "Website is not healthy (status $status). Skipping mirror; will retry on next scheduled run."
+
+          # 1️⃣  HTTP status
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+              --max-time 30 --tries 3 --retry 3 --retry-delay 2 \
+              --user-agent="Mozilla/5.0 (github-mirror; every-3h; +https://github.com/kkapelon/5o-dimotiko-chalandriou)" \
+              http://5dim-chalandr.att.sch.gr/autosch/joomla15/index.php/nea-anakoinoseis/)
+          echo "HTTP status: $STATUS"
+
+          if [ "$STATUS" != "200" ]; then
+            echo "Website is not healthy (status $STATUS)."
+            echo "healthy=false" >> $GITHUB_OUTPUT
             exit 0
           fi
-          echo "Website is healthy. Proceeding with mirror."
+
+          # 2️⃣  Pull the very first few kilobytes of the page
+          BODY=$(curl -sL --max-time 30 --retry 3 --retry-delay 2 \
+              --user-agent="Mozilla/5.0 (github-mirror; every-3h; +https://github.com/kkapelon/5o-dimotiko-chalandriou)" \
+              "http://5dim-chalandr.att.sch.gr/autosch/joomla15/index.php/nea-anakoinoseis/")
+
+          # 3️⃣  Look for the known title (case‑insensitive)
+          if echo "$BODY" | grep -qi "5ο Δημοτικό Σχολείο Χαλανδρίου"; then
+            echo "✅ Site healthy (HTTP 200 + correct title)."
+            echo "healthy=true" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️  HTTP $STATUS but title not found – likely DB‑down page."
+            echo "healthy=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Mirror site with wget
+        if: steps.health.outputs.healthy == 'true'
         run: |
           set -euo pipefail
           # Mirror ONLY the nea-anakoinoseis subtree (listing + sub-articles).
